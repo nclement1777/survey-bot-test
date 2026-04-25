@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["chromium", "chromium-sandbox"]
+
+[phases.install]
+cmds = [
+  "npm install",
+  "npx playwright install chromium"
+]
+
+[start]
+cmd = "node index.js"
