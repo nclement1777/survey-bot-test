@@ -52,13 +52,25 @@ If a field is not visible, use null.`
 async function fillSurvey(surveyData, email) {
   const browser = await chromium.launch({ 
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox', 
+      '--disable-setuid-sandbox',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-features=IsolateOrigins,site-per-process'
+    ]
   })
-  const page = await browser.newPage()
+  const context = await browser.newContext({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    viewport: { width: 1920, height: 1080 },
+    locale: 'en-CA',
+    timezoneId: 'America/Toronto'
+  })
+  const page = await context.newPage()
 
   try {
     let url = surveyData.survey_url
-    if (!url.startsWith('http')) url = 'https://' + url
+    url = url.replace(/^http:\/\//i, 'https://')
+    if (!url.startsWith('https://')) url = 'https://' + url
     await page.goto(url, { waitUntil: 'networkidle' })
 
     for (let i = 0; i < 15; i++) {
