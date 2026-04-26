@@ -56,7 +56,9 @@ async function fillSurvey(surveyData, email) {
   const page = await browser.newPage()
 
   try {
-    await page.goto(surveyData.survey_url, { waitUntil: 'networkidle' })
+  let url = surveyData.survey_url
+if (!url.startsWith('http')) url = 'https://' + url
+await page.goto(url, { waitUntil: 'networkidle' })
 
     for (let i = 0; i < 15; i++) {
       const screenshot = await page.screenshot({ type: 'jpeg', quality: 70 })
