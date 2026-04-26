@@ -1,5 +1,7 @@
 const { execSync } = require('child_process')
-try { execSync('npx playwright install chromium --with-deps', { stdio: 'inherit' }) } catch(e) {}const express = require('express')
+try { execSync('npx playwright install chromium --with-deps', { stdio: 'inherit' }) } catch(e) {}
+
+const express = require('express')
 const cors = require('cors')
 const multer = require('multer')
 const Anthropic = require('@anthropic-ai/sdk')
@@ -56,7 +58,6 @@ async function fillSurvey(surveyData, email) {
   try {
     await page.goto(surveyData.survey_url, { waitUntil: 'networkidle' })
 
-    // Loop: screenshot → Claude decides action → execute → repeat
     for (let i = 0; i < 15; i++) {
       const screenshot = await page.screenshot({ type: 'jpeg', quality: 70 })
       const base64 = screenshot.toString('base64')
@@ -121,21 +122,18 @@ Rules:
   }
 }
 
-// Main endpoint — Lovable calls this
 app.post('/run-survey', upload.single('receipt'), async (req, res) => {
   try {
     const email = req.body.email || 'your@email.com'
     const imageBase64 = req.file.buffer.toString('base64')
     const mimeType = req.file.mimetype
 
-    // Claude reads the receipt
     const surveyData = await extractReceiptData(imageBase64, mimeType)
 
     if (!surveyData.survey_url) {
       return res.json({ success: false, message: 'No survey URL found on receipt' })
     }
 
-    // Claude fills the survey
     const result = await fillSurvey(surveyData, email)
 
     res.json({ ...result, surveyData })
@@ -145,4 +143,4 @@ app.post('/run-survey', upload.single('receipt'), async (req, res) => {
   }
 })
 
-app.listen(3000, () => console.log('Survey bot ready'))
+app.listen(process.env.PORT || 3000, () => console.log('Survey bot ready'))
