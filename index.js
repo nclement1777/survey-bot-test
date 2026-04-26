@@ -1,4 +1,5 @@
-const express = require('express')
+const { execSync } = require('child_process')
+try { execSync('npx playwright install chromium --with-deps', { stdio: 'inherit' }) } catch(e) {}const express = require('express')
 const cors = require('cors')
 const multer = require('multer')
 const Anthropic = require('@anthropic-ai/sdk')
