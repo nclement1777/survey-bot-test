@@ -44,7 +44,8 @@ If a field is not visible, use null.`
   })
 
   const text = response.content[0].text
-  return JSON.parse(text.replace(/```json|```/g, '').trim())
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+  return JSON.parse(jsonMatch ? jsonMatch[0] : text.replace(/```json|```/g, '').trim())
 }
 
 // Step 2: Claude fills the survey using Playwright
@@ -56,9 +57,9 @@ async function fillSurvey(surveyData, email) {
   const page = await browser.newPage()
 
   try {
-  let url = surveyData.survey_url
-if (!url.startsWith('http')) url = 'https://' + url
-await page.goto(url, { waitUntil: 'networkidle' })
+    let url = surveyData.survey_url
+    if (!url.startsWith('http')) url = 'https://' + url
+    await page.goto(url, { waitUntil: 'networkidle' })
 
     for (let i = 0; i < 15; i++) {
       const screenshot = await page.screenshot({ type: 'jpeg', quality: 70 })
@@ -76,7 +77,9 @@ await page.goto(url, { waitUntil: 'networkidle' })
             },
             {
               type: 'text',
-              text: `You are filling out a grocery store customer survey.
+              text: `RESPOND WITH ONLY A JSON OBJECT — no preamble, no explanation, no analysis. Start your response with { and end with }.
+
+You are filling out a grocery store customer survey.
 Survey info: ${JSON.stringify(surveyData)}
 Sweepstakes email: ${email}
 
@@ -94,7 +97,14 @@ Rules:
         }]
       })
 
-      const parsed = JSON.parse(action.content[0].text.replace(/```json|```/g, '').trim())
+      const rawText = action.content[0].text.replace(/```json|```/g, '').trim()
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        console.log('Non-JSON response, retrying:', rawText)
+        await page.waitForTimeout(2000)
+        continue
+      }
+      const parsed = JSON.parse(jsonMatch[0])
 
       if (parsed.action === 'done') {
         return { success: true, message: parsed.value || 'Survey completed!' }
